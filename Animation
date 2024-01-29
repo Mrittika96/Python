@@ -1,0 +1,70 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import matplotlib.animation as animation
+
+def funct(x):
+    return np.sin(x)
+
+def derivative(x):
+    h = 1e-10
+    dev = (funct(x + h) - funct(x - h)) / (2 * h)
+    return dev
+
+def data_gen(t=0):
+    cnt = 0
+    while cnt < 1000:
+        cnt += 1
+        t += 0.1
+        yield t, funct(t), derivative(t)
+
+fig, (ax1, ax2, ax3) = plt.subplots(2, 2, figsize=(10, 10))
+fig.suptitle("$ sin(x) $", size=10)
+
+def setup_subplot(ax, x_limit, y_limit, x_label, y_label, line_color):
+    ax.set_xlim(x_limit)
+    ax.set_ylim(y_limit)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+
+    line = Line2D([], [], color=line_color, linewidth=2)
+    ax.add_line(line)
+    return line,
+
+lines1 = setup_subplot(ax1, (0, 5), (-1.2, 1.2), 'x', 'y', 'red')
+lines2 = setup_subplot(ax2, (0, 5), (-1.2, 1.2), 'x', 'dy/dx', 'blue')
+lines3 = setup_subplot(ax3, (-1.2, 1.2), (-1.2, 1.2), 'y', 'dy/dx', 'green')
+
+xdata, y1data, y2data = [], [], []
+
+def init():
+    for line in lines1 + lines2 + lines3:
+        line.set_data([], [])
+    return lines1 + lines2 + lines3
+
+def animate(data):
+    x, y1, y2 = data
+    xdata.append(x)
+    y1data.append(y1)
+    y2data.append(y2)
+
+    for ax, y_data, y_limit in zip([ax1, ax2, ax3], [y1data, y2data, y2data], [(y1min, 2 * y1max), (y1min, 2 * y1max), (y2min, 2 * y2max)]):
+        if y_data[-1] >= y_limit[1]:
+            ax.set_ylim(y_limit)
+            ax.figure.canvas.draw()
+
+    if x >= ax1.get_xlim()[1]:
+        ax1.set_xlim(ax1.get_xlim()[0], 2 * ax1.get_xlim()[1])
+        ax2.set_xlim(ax2.get_xlim()[0], 2 * ax2.get_xlim()[1])
+        ax1.figure.canvas.draw()
+        ax2.figure.canvas.draw()
+
+    lines1[0].set_data(xdata, y1data)
+    lines2[0].set_data(xdata, y2data)
+    lines3[0].set_data(y1data, y2data)
+
+    return lines1 + lines2 + lines3
+
+anim = animation.FuncAnimation(fig, animate, data_gen, blit=True, interval=50, repeat=False, init_func=init)
+# anim.save("subanim.mp4")
+plt.show()
